@@ -6,6 +6,19 @@
  * @see hdbt_content_preprocess_tpr_service()
  */
 #}
+{% if view_mode == 'teaser_search_result' %}
+
+  <div class="service--teaser-search-result">
+    <a href="{{ url('entity.tpr_service.canonical', { 'tpr_service': entity.id() }) }}" class="service__link">
+      <h3 class="service__title">
+        {{ entity.label }}
+      </h3>
+      {% include '@hdbt/misc/icon.twig' ignore missing with {icon: 'arrow-right'} %}
+    </a>
+    {{ content.description }}
+  </div>
+
+{% endif %}
 
 {% if view_mode != 'teaser' %}
 
