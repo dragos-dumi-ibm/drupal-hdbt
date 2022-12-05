@@ -110,6 +110,11 @@ function hdbt_preprocess_html(&$variables) {
   else {
     $variables['#attached']['library'][] = 'hdbt/nav-local';
   }
+
+  // Add theme path to as variable.
+  $variables['theme_path'] = '/' . \Drupal::service('theme_handler')
+    ->getTheme('hdbt')
+    ->getPath();
 }
 
 /**
@@ -454,6 +459,12 @@ function hdbt_preprocess_menu(&$variables) {
   foreach ($variables['items'] as &$item) {
     _hdbt_menu_item_apply_attributes($item, $apply_lang_attribute);
   }
+
+  // Menu, mobile menu, fallback menu and sidebar menu tree depth.
+  // Counting from "instance", "main level", "level 3", "level 4", "level 5"...
+  $menu_depth = 5;
+  $variables['menu_depth'] = $menu_depth;
+  $variables['#attached']['drupalSettings']['menu_depth'] = $menu_depth;
 }
 
 /**
@@ -681,7 +692,21 @@ function hdbt_preprocess_paragraph(array &$variables) {
     $variables['accordion_item_heading_level'] = $accordion_item_heading_level;
   }
 
-  // Check if the paragraph is a type of image.
+  if ($paragraph_type == 'sote_section') {
+    $variables['#attached']['library'][] = 'hdbt/hierarchical_taxonomy_tree';
+    $variables['vocabulary'] = 'sote_section';
+    $variables['max_depth'] = $variables['paragraph']->field_max_depth->value;
+    $variables['collapsible'] = 1;
+
+    $excludeByTypeId = [];
+    foreach ($variables['paragraph']->field_exclude_by_type_id as $value) {
+      $excludeByTypeId[] = $value->value;
+    }
+    $variables['menu_tree'] = \Drupal::service('helfi_ahjo.ahjo_service')
+      ->showDataAsTree($excludeByTypeId, $variables['paragraph']->field_organization->target_id, $variables['paragraph']->field_max_depth->value);
+  }
+
+
   if ($paragraph_type == 'image' && $paragraph->hasField('field_image')) {
     // Handle image caption preprocessing.
     _hdbt_preprocess_image_caption(
@@ -809,22 +834,6 @@ function hdbt_preprocess_paragraph(array &$variables) {
     $variables['services_list'] = implode(',', array_map(function ($service) {
       return $service['target_id'];
     }, $paragraph->field_service_list_services->getValue()));
-  }
-
-  if ($paragraph_type == 'service_list_search') {
-    $ids = '';
-    $service_ids = '';
-    if ($paragraph->hasField('field_service_list_services')) {
-      $ids = implode(',', array_map(function ($service) {
-        return $service['target_id'];
-      }, $paragraph->field_service_list_services->getValue()));
-    }
-    if ($paragraph->hasField('field_service_list_service_ids')) {
-      $service_ids = implode(',', array_map(function ($service) {
-        return $service['value'];
-      }, $paragraph->field_service_list_service_ids->getValue()));
-    }
-    $variables['services_list_views_argument'] = $ids . '|' . $service_ids;
   }
 
   // Contact card paragraph.
@@ -1227,14 +1236,11 @@ function _hdbt_craft_token(string $name, array &$variables) {
  * Implements hook_theme_suggestions_HOOK_alter().
  */
 function hdbt_theme_suggestions_views_view_alter(array &$suggestions, array $variables) {
-  if (isset($variables['view'])) {
-    $view = $variables['view'];
-    if (!empty($variables['view']->id())) {
-      $suggestions[] = 'views_view__' . $variables['view']->id();
-    }
-    if (!empty($view->getDisplay()->display['id'])) {
-      $suggestions[] = 'views_view__' . $variables['view']->id() . '__' . $variables['view']->current_display;
-    }
+  if (
+    isset($variables['view']) &&
+    !empty($variables['view']->id())
+  ) {
+    $suggestions[] = 'views_view__' . $variables['view']->id();
   }
 }
 
@@ -1284,10 +1290,6 @@ function hdbt_preprocess_views_view(&$variables) {
   if ($variables['view']->total_rows != NULL) {
     $variables['total_rows'] = $variables['view']->total_rows;
   }
-  if ($variables['view']->id() == 'service_list') {
-    $variables['is_ajax_request'] = \Drupal::request()->isXmlHttpRequest();
-  }
-//
 }
 
 /**
