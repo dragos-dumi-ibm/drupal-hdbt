@@ -695,15 +695,20 @@ function hdbt_preprocess_paragraph(array &$variables) {
   if ($paragraph_type == 'sote_section') {
     $variables['#attached']['library'][] = 'hdbt/hierarchical_taxonomy_tree';
     $variables['vocabulary'] = 'sote_section';
-    $variables['max_depth'] = $variables['paragraph']->field_max_depth->value;
+    $variables['max_depth'] = $variables['paragraph']->field_max_depth->value ?? 0;
     $variables['collapsible'] = 1;
 
     $excludeByTypeId = [];
     foreach ($variables['paragraph']->field_exclude_by_type_id as $value) {
       $excludeByTypeId[] = $value->value;
     }
-    $variables['menu_tree'] = \Drupal::service('helfi_ahjo.ahjo_service')
+
+    $renderer = \Drupal::service('renderer');
+
+    $menu_tree = \Drupal::service('helfi_ahjo.ahjo_service')
       ->showDataAsTree($excludeByTypeId, $variables['paragraph']->field_organization->target_id, $variables['paragraph']->field_max_depth->value);
+    $variables['menu_tree'] = $menu_tree;
+    $renderer->addCacheableDependency($variables['menu_tree'], $menu_tree);
   }
 
 
@@ -811,6 +816,22 @@ function hdbt_preprocess_paragraph(array &$variables) {
         'field_liftup_with_image_image',
         $image_style
       );
+    }
+
+    if ($paragraph_type == 'service_list_search') {
+      $ids = '';
+      $service_ids = '';
+      if ($paragraph->hasField('field_service_list_services')) {
+        $ids = implode(',', array_map(function ($service) {
+          return $service['target_id'];
+        }, $paragraph->field_service_list_services->getValue()));
+      }
+      if ($paragraph->hasField('field_service_list_service_ids')) {
+        $service_ids = implode(',', array_map(function ($service) {
+          return $service['value'];
+        }, $paragraph->field_service_list_service_ids->getValue()));
+      }
+      $variables['services_list_views_argument'] = $ids . '|' . $service_ids;
     }
   }
 
@@ -1240,7 +1261,14 @@ function hdbt_theme_suggestions_views_view_alter(array &$suggestions, array $var
     isset($variables['view']) &&
     !empty($variables['view']->id())
   ) {
-    $suggestions[] = 'views_view__' . $variables['view']->id();
+
+    $view = $variables['view'];
+    if (!empty($variables['view']->id())) {
+      $suggestions[] = 'views_view__' . $variables['view']->id();
+    }
+    if (!empty($view->getDisplay()->display['id'])) {
+      $suggestions[] = 'views_view__' . $variables['view']->id() . '__' . $variables['view']->current_display;
+    }
   }
 }
 
@@ -1289,6 +1317,9 @@ function hdbt_preprocess_views_view(&$variables) {
   // Add total rows as a variable.
   if ($variables['view']->total_rows != NULL) {
     $variables['total_rows'] = $variables['view']->total_rows;
+  }
+  if ($variables['view']->id() == 'service_list') {
+    $variables['is_ajax_request'] = \Drupal::request()->isXmlHttpRequest();
   }
 }
 

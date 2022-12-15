@@ -3,13 +3,10 @@
   {% for item in menu_tree %}
     {%
       set liClass = [
-      item.subitem and current_depth < max_depth ? 'menu-item menu-item--expanded block-taxonomymenu__tree-item block-taxonomymenu__tree-item--expanded' : 'menu-item block-taxonomymenu__tree-item',
+      item.subitem and current_depth < max_depth ? 'helfi_ahjo--expanded block-taxonomymenu__tree-item block-taxonomymenu__tree-item--expanded' : 'helfi_ahjo block-taxonomymenu__tree-item',
     ]
     %}
 <li class="{{ liClass|join(' ') }}">
-  {% if item.image %}
-    <img class="menu-item-image block-taxonomymenu__image" src="{{ item.image }}" alt="{{ item.name }}" {% if item.use_image_style == false %}height="{{ item.height }}" width="{{ item.width }}"{% endif %} />
-  {% endif %}
   <a href="{{ item.url }}" class="block-taxonomymenu__link">{{ item.name }}{% if item.show_count == true %} [{{ item.entities|length }}]{% endif %}
     {% if item.subitem and current_depth < max_depth %}
       <i class="arrow-right parent-toggle" aria-hidden="true"></i><span class="visually-hidden">Expand Secondary Navigation Menu</span>
@@ -17,9 +14,9 @@
   {% if item.subitem and current_depth < max_depth %}
 
   {% if collapsible == TRUE %}
-  <ul class="menu block-taxonomymenu__submenu collapsed-submenu">
+  <ul class="ahjo-tree block-taxonomymenu__submenu collapsed-submenu">
     {% else %}
-    <ul class="menu block-taxonomymenu__submenu">
+    <ul class="ahjo-tree block-taxonomymenu__submenu">
       {% endif %}
       {{ macros.menu_links(item.subitem, current_depth + 1, max_depth, collapsible) }}
     </ul>
