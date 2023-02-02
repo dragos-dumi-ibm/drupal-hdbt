@@ -138,3 +138,15 @@ disable_genesys_button:
   - core/jquery
   - core/drupal
   - core/drupalSettings
+
+hierarchical_taxonomy_tree:
+  css:
+    theme:
+      dist/css/hierarchical-taxonomy-tree.css: {}
+  js:
+    src/js/hierarchical-taxonomy-tree.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+    - core/once
